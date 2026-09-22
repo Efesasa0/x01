@@ -1,0 +1,38 @@
+defaults:
+  - sr: ddim_complex
+  - _self_
+
+hydra:
+  job:
+    chdir: false
+  output_subdir: null
+  run:
+    dir: .
+
+seed: 42
+
+data:
+  path: ../kmflow_re1000_r256_b400_f320_clean.npy
+  downsample: 1  # 1 keeps HR (256x256)
+
+training:
+  batch_size: 32
+  lr: 1e-4
+  epochs: 12
+  num_workers: 2
+  grad_clip: 1.0
+  log_every_n_steps: 50
+  ckpt_every: 10
+  ckpt_dir: checkpoints/
+  smoke: false
+  scheduler: none  # none | linear | flat_decay
+  ema_decay: 0.9999  # asymptotic EMA decay; warmup ramps it up early in training
+
+viz:
+  enabled: true
+  every: 5
+
+wandb:
+  entity: x01_team
+  project: x01_wandb
+  tags: []

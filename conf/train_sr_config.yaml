@@ -1,0 +1,52 @@
+defaults:
+  - sr: ddim_complex
+  - _self_
+
+hydra:
+  job:
+    chdir: false
+  output_subdir: null
+  run:
+    dir: .
+
+seed: 0
+
+data:
+  path: ../kmflow_re1000_r256_b400_f320_clean.npy
+  smoke_path: ../kmflow_smoke.npy  # written by run_sim.py smoke=true
+  downsample: 1  # 1 keeps HR (256x256)
+  n_train: 254
+  n_val: 30
+  n_test: 30
+  T_in: 0
+  T: 320
+  standardize: true
+
+training:
+  batch_size: 32
+  lr: 1e-4
+  epochs: 12
+  num_workers: 2
+  grad_clip: 1.0
+  log_every_n_steps: 50
+  smoke: false
+  scheduler: none  # none | linear | flat_decay
+  ema_decay: 0.9999  # asymptotic EMA decay; warmup ramps it up early in training
+
+viz:
+  enabled: true
+  every: 5
+
+save:
+  enabled: true
+  ckpt_every: 10
+  ckpt_dir: checkpoints/
+  plot_every: 5
+  plot_dir: plots/
+  run_tag: ""  # custom label appended to per-run subfolder: {iso}__{branch}__{run_tag}
+
+wandb:
+  enabled: false
+  entity: x01_team
+  project: x01_sr
+  tags: []

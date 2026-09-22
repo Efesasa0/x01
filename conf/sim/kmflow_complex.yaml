@@ -1,0 +1,7 @@
+re: 1000
+alpha: 2.5
+tau: 7.0
+dt: 1.0e-3
+resolution: 256
+forcing_n: 4
+drag: 0.1

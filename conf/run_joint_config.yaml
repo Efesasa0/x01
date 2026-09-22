@@ -1,0 +1,45 @@
+defaults:
+  - _self_
+
+hydra:
+  job:
+    chdir: false
+  output_subdir: null
+  run:
+    dir: .
+
+seed: 0
+smoke: false
+
+inference_mode: sequential # sequential | koopman
+
+data:
+  path: ../kmflow_re1000_r256_b400_f320_clean.npy
+  smoke_path: ../kmflow_smoke.npy  # written by run_sim.py smoke=true
+  test_size: 30  # last N trajectories; strict overlap of AR/SR held-out test splits
+
+pipeline:
+  part1_frames: 32
+  part2_frames: 320
+  part3_frames: 1024
+  sr_batch_size: 32
+
+checkpoints:
+  ar_path: ""  # required
+  sr_path: ""  # required
+  smoke_ar_path: checkpoints/smoke/koopman_ar_epoch0002.pt  # written by train_ar.py training.smoke=true
+  smoke_sr_path: checkpoints/smoke/ddim_sr_epoch0002.pt  # written by train_sr.py training.smoke=true
+
+viz:
+  enabled: true
+
+save:
+  enabled: true
+  plot_dir: plots/joint/
+  run_tag: ""
+
+wandb:
+  enabled: false
+  entity: x01_team
+  project: x01_joint
+  tags: []

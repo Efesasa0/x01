@@ -1,0 +1,23 @@
+name: koopman
+
+#  Transformer (Table S2)
+dims: 32
+num_blocks: [4, 6, 6, 8]
+num_heads: [2, 4, 8, 16]
+dynamics_mode: separate  # separate | single
+dynamics_rank: null  # null = full 1024x1024 K; int in (0, 1024) enables low-rank K = up(down(x) @ core)
+pixel_rollout_steps: 10  # Azencot
+latent_rollout_steps: 10  # Lusch
+lambda_fwd: 1.0
+lambda_recon: 1.0
+lambda_consist: 0.01
+lambda_bwd: 0.1 # Azencot
+lambda_latent_fwd: 1.0 # Lusch
+lambda_latent_bwd: 1.0 # Lusch
+lambda_ortho_a: 0.0
+lambda_ortho_b: 0.0
+lambda_consist_progressive: 0.0 # Azencot
+loss_mode: mse # lp | hs | mse
+lp_size_average: true
+hs_size_average: false
+mse_size_average: true

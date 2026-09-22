@@ -1,0 +1,12 @@
+name: koopman
+
+#  Transformer (Table S2)
+dims: 16
+num_blocks: [4, 6, 6, 8]
+num_heads: [1, 2, 4, 8]
+init_scale: 1.0
+lambda_recon: 1.0
+lambda_ortho: 0.1
+lambda_bwd: 1.0
+lambda_fwd: 1.0
+lambda_latent_fwd: 1.0

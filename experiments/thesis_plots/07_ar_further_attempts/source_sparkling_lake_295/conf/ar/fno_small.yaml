@@ -1,0 +1,15 @@
+name: fno
+
+# NeuralOps FNO (Table S2)
+hidden_channels: 20
+n_modes: [14, 14]
+n_layers: 4
+factorization: tucker
+rank: 1.0
+implementation: factorized
+fno_skip: linear
+channel_mlp_dropout: 0
+channel_mlp_expansion: 0.5
+channel_mlp_skip: soft-gating
+lifting_channel_ratio: 2
+projection_channel_ratio: 1

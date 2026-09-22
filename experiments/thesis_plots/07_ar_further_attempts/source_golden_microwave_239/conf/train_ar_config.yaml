@@ -1,0 +1,38 @@
+defaults:
+  - ar: koopman_big
+  - _self_
+
+hydra:
+  job:
+    chdir: false
+  output_subdir: null
+  run:
+    dir: .
+
+seed: 42
+
+data:
+  path: ../kmflow_re1000_r256_b400_f320_clean.npy
+  skip_trans: false
+  skip_trans_step: 100
+
+training:
+  batch_size: 32
+  lr: 1e-4
+  epochs: 12
+  num_workers: 2
+  grad_clip: 1.0
+  log_every_n_steps: 50
+  ckpt_every: 10
+  ckpt_dir: checkpoints/
+  smoke: false
+  scheduler: none  # none | linear | flat_decay
+
+viz:
+  enabled: true
+  every: 5
+
+wandb:
+  entity: x01_team
+  project: x01_wandb
+  tags: []

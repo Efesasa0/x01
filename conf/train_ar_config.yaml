@@ -1,0 +1,54 @@
+defaults:
+  - ar: koopman_big
+  - _self_
+
+hydra:
+  job:
+    chdir: false
+  output_subdir: null
+  run:
+    dir: .
+
+seed: 0
+
+inference_mode: sequential # sequential | koopman  (applies to diagnostic rollouts during training)
+
+data:
+  path: ../kmflow_re1000_r256_b400_f320_clean.npy
+  smoke_path: ../kmflow_smoke.npy  # written by run_sim.py smoke=true
+  n_train: 252
+  n_val: 31
+  n_test: 31
+  T_in: 0
+  T: 320
+  standardize: true
+  use_precomputed_std: false # if true, skip the std pass and use train_std below
+  train_std: 4.5722
+
+training:
+  batch_size: 20
+  lr: 1e-4
+  weight_decay: 1e-4
+  epochs: 100
+  num_workers: 2
+  log_every_n_steps: 50
+  smoke: false
+  scheduler: step  # none | linear | step | flat_decay
+
+viz:
+  enabled: true
+  every: 10
+
+save:
+  enabled: true
+  ckpt_every: 10
+  ckpt_dir: checkpoints/
+  plot_every: 10
+  plot_dir: plots/
+  run_tag: ""  # custom label appended to per-run subfolder: {iso}__{branch}__{run_tag}
+
+wandb:
+  enabled: false
+  entity: x01_team
+  project: x01_ar
+  tags: []

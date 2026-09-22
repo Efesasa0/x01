@@ -1,0 +1,30 @@
+defaults:
+  - sim: kmflow_complex
+  - _self_
+
+hydra:
+  job:
+    chdir: false
+  output_subdir: null
+  run:
+    dir: .
+
+seed: 42
+smoke: false
+
+record:
+  n_trajectories: 320
+  n_frames: 5000
+  step_interval: 1000
+  batch_size: 64
+  warmup_time: 100.0  # T-units of CN+Heun stepping before recording starts
+
+output:
+  out_dir: ../
+  dtype: float32
+  save_dataset: true
+
+wandb:
+  entity: x01_team
+  project: x01_sim
+  tags: []

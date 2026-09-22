@@ -1,0 +1,11 @@
+chunk_id,n_combos,estimated_total_params,combo_ids
+0,1,87428576,alpha_e3_d064
+1,1,76810400,alpha_e2_d064
+2,1,66192224,alpha_e1_d064
+3,1,49400776,alpha_e3_d048
+4,1,43386152,alpha_e2_d048
+5,1,37371528,alpha_e1_d048
+6,1,22145784,alpha_e3_d032
+7,1,19436500,alpha_e2_d032
+8,1,16727216,alpha_e1_d032
+9,3,14933076,alpha_e1_d016 alpha_e2_d016 alpha_e3_d016

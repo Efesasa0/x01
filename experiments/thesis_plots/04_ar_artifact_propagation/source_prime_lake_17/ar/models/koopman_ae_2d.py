@@ -1,0 +1,159 @@
+from typing import Literal
+
+import torch
+import torch.nn as nn
+
+from ar.blocks.dynamics import DynamicsBackBlock, DynamicsBlock
+from ar.blocks.embeddings import OverlapPatchEmbed
+from ar.blocks.samplers import Downsample, Upsample
+from ar.blocks.transformer import TransformerBlock
+from ar.blocks.utils import variance_scaling_uniform_
+
+
+class KoopmanAE2D(nn.Module):
+    def __init__(
+        self,
+        in_channels: int,
+        out_channels: int,
+        dims: int = 4,
+        num_blocks: tuple = (2, 2, 2, 2),
+        spatial_scaling_schedule: tuple = (2, 4, 4),
+        num_heads: tuple = (1, 2, 4, 4),
+        ffn_expansion_factor: float = 2.66,
+        use_bias: bool = False,
+        use_norm_bias: bool = True,
+        steps: int = 1,
+        init_scale: float = 0.9,
+        grid_info: bool = True,
+    ):
+        super().__init__()
+
+        assert len(num_heads) == len(num_blocks) == len(spatial_scaling_schedule) + 1, (
+            "the number of heads and"
+            " blocks must match, and the"
+            " spatial scaling schedule"
+            " must be one element shorter"
+            " than the number of blocks."
+        )  # TODO: Why? because at last block we dont do spatial scaling with the Downsample
+
+        self.steps = steps
+        self.grid_dim = 2 if grid_info else 0
+        self.latent_dim = dims * (2 ** len(spatial_scaling_schedule))  # TODO: Why? 32
+
+        tb_kwargs = dict(
+            ffn_expansion_factor=ffn_expansion_factor,
+            use_bias=use_bias,
+            use_norm_bias=use_norm_bias,
+        )
+
+        # --- Encoder ---
+        encoder_layers: list[nn.Module] = [
+            OverlapPatchEmbed(
+                input_channels=self.grid_dim + in_channels,
+                embedding_dims=dims,
+                use_bias=use_bias,
+            )
+        ]
+        for i in range(len(num_blocks)):
+            ch = dims * (2**i)
+            for _ in range(num_blocks[i]):
+                encoder_layers.append(TransformerBlock(dims=ch, num_heads=num_heads[i], **tb_kwargs))
+            if i < len(spatial_scaling_schedule):
+                encoder_layers.append(Downsample(in_features=ch, downsample_factor=spatial_scaling_schedule[i]))
+        self.encoder = nn.Sequential(*encoder_layers)
+
+        # --- Decoder ---
+        decoder_layers: list[nn.Module] = []
+        for i, factor in enumerate(spatial_scaling_schedule[::-1]):
+            up_level = len(spatial_scaling_schedule) - i  # channel level going into upsample
+            tb_level = up_level - 1  # channel level coming out of upsample
+            decoder_layers.append(Upsample(in_features=dims * (2**up_level), upsample_factor=factor))
+            for _ in range(num_blocks[tb_level]):
+                decoder_layers.append(
+                    TransformerBlock(dims=dims * (2**tb_level), num_heads=num_heads[tb_level], **tb_kwargs)
+                )
+        output_conv = nn.Conv2d(dims, out_channels, kernel_size=3, padding=1, bias=use_bias)
+        variance_scaling_uniform_(output_conv.weight)
+        if use_bias:
+            nn.init.zeros_(output_conv.bias)
+        decoder_layers.append(output_conv)
+        self.decoder = nn.Sequential(*decoder_layers)
+
+        # --- Dynamics ---
+        latent_size = self.latent_dim * 2 * 2  # 32
+        self.dynamics = DynamicsBlock(latent_size, latent_size, init_scale)  # TODO: Why do this init_scale if = 1.0?
+        self.back_dynamics = DynamicsBackBlock(latent_size, latent_size, self.dynamics)
+
+    def _get_grid(self, H: int, W: int, batch_size: int, device: torch.device) -> torch.Tensor:
+        # gridx varies along H (rows), gridy varies along W (columns) — fixes the Flax bug
+        # where both axes were incorrectly varied along rows.
+        gridx = torch.linspace(0, 1, H, device=device).view(1, 1, H, 1).expand(batch_size, 1, H, W)
+        gridy = torch.linspace(0, 1, W, device=device).view(1, 1, 1, W).expand(batch_size, 1, H, W)
+        return torch.cat([gridx, gridy], dim=1)  # (N, 2, H, W)
+
+    def forward(
+        self, x: torch.Tensor, mode: Literal["forward", "backward"]
+    ) -> tuple[list[torch.Tensor], list[torch.Tensor]]:
+        batch, _C, H, W = x.shape  # (2, 1, 64, 64)
+        grid = self._get_grid(H, W, batch, x.device)
+        z = self.encoder(torch.cat([x, grid], dim=1))  # (N, latent_dim, 2, 2) i.e., (N, 32, 2, 2)
+        qt = z.reshape(batch, -1)  # (N, latent_dim * 2 * 2) i.e., (N, 128)
+
+        if mode == "forward":
+            out: list[torch.Tensor] = []
+            for _ in range(self.steps):
+                qt = self.dynamics(qt)  # Calls forward in time operator qt -> qt+1
+                out.append(
+                    self.decoder(qt.reshape(batch, self.latent_dim, 2, 2))
+                )  # from (N, 128) to (N, 32, 2, 2) to feed to the decoder getting next xt+1
+            return out, [self.decoder(z)]
+
+        if mode == "backward":
+            out_back: list[torch.Tensor] = []
+            for _ in range(self.steps):
+                qt = self.back_dynamics(qt)  # Calls backward in time operator: qt -> qt-1
+                out_back.append(self.decoder(qt.reshape(batch, self.latent_dim, 2, 2)))
+            return out_back, [self.decoder(z)]
+
+        raise ValueError(f"mode must be 'forward' or 'backward', got {mode!r}")
+
+    def encode(self, x: torch.Tensor, mode: Literal["forward", "backward", "identity"] = "identity") -> torch.Tensor:
+        batch, _C, H, W = x.shape
+        grid = self._get_grid(H, W, batch, x.device)
+        z = self.encoder(torch.cat([x, grid], dim=1)).reshape(batch, -1)
+        if mode == "forward":
+            return self.dynamics(z)
+        if mode == "backward":
+            return self.back_dynamics(z)
+        return z
+
+    def decode(self, z: torch.Tensor) -> torch.Tensor:
+        return self.decoder(z.reshape(z.shape[0], self.latent_dim, 2, 2))
+
+    def count_params(self) -> int:
+        return sum(p.numel() for p in self.parameters())
+
+
+if __name__ == "__main__":
+    torch.manual_seed(0)
+
+    model = KoopmanAE2D(in_channels=1, out_channels=1)
+    print(model.count_params())
+
+    x = torch.randn(32, 1, 64, 64)
+    y = torch.randn(32, 1, 64, 64)
+
+    out, out_id = model(x, mode="forward")
+    print(out[0].shape, out_id[0].shape)
+
+    z = model.encode(x)
+    print(z.shape)
+    xp = model.decode(z)
+    print(xp.shape)
+
+    from ar.models.loss_fn import loss_koopman
+
+    loss, log = loss_koopman(model, x, y)
+    print(loss.item())
+    for k, v in log.items():
+        print(k, v.item())  # consistent loss is the most important to have K and K.inv to be true inverses
