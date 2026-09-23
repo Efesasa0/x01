@@ -62,3 +62,4 @@ include details for every experiment such as LS probe and sweeps.
 - 2026-09-22 - All datasets live in the parent dir. Smoke runs now chain: sim -> AR -> SR -> joint.
 - 2026-09-22 - Plot data (.npz) for figures 03-11 ships with the repo. Stage C joint data trimmed to the 6 plotted frames.
 - 2026-09-22 - Added ruff (format + lint, 120 cols). experiments/ excluded so the source snapshots stay as they ran.
+- 2026-09-23 - README asks users to cite Uni-Flow (Xue et al., 2026) alongside the thesis. Added its BibTeX.

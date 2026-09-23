@@ -7,6 +7,11 @@ This is the code for my MSc Machine Learning thesis at UCL, supervised by Dr.
 Xiao Xue, Dr. Ira Shokar and Prof. Peter V. Coveney. The full thesis is in
 [`docs/x01-thesis.pdf`](docs/x01-thesis.pdf).
 
+> **Please also cite Uni-Flow.** The AR-SR framework in this repository builds
+> directly on [Uni-Flow](https://arxiv.org/abs/2602.15592) (Xue et al., 2026).
+> If you use this code, cite Uni-Flow alongside this thesis. See
+> [Citation](#citation).
+
 For full logs regarding development see [`Logs.md`](/Logs.md).
 
 For generated/used dataset see
@@ -157,12 +162,29 @@ copied and distributed freely, as long as the source material is acknowledged.
 
 ## Citation
 
+This work builds on Uni-Flow, which introduced the unified autoregressive
+(time) plus diffusion super-resolution (space) formulation used here. If you
+use this code, please cite both works:
+
 ```bibtex
+@article{xue2026uniflow,
+  title   = {{Uni-Flow}: A Unified Autoregressive-Diffusion Model for Complex
+             Multiscale Flows},
+  author  = {Xue, Xiao and Yang, Tianyue and Gao, Mingyang and Pan, Leyu and
+             Wang, Maida and Zhu, Kewei and Wang, Shuo and Li, Jiuling and
+             ten Eikelder, Marco F. P. and Coveney, Peter V.},
+  journal = {arXiv preprint arXiv:2602.15592},
+  year    = {2026},
+  url     = {https://arxiv.org/abs/2602.15592}
+}
+
+
 @mastersthesis{sahin2026x01,
   title  = {X01: From $x_0$ to $x_1$. On Learning Flow Dynamics in Two-Dimensional Kolmogorov Flow
             using Koopman Operator Theory and Diffusion-Based Vorticity Reconstruction},
   author = {\c{S}ahin, Efe},
   school = {University College London},
-  year   = {2026}
+  year   = {2026},
+  note   = {Supervised by Dr. Xiao Xue, Dr. Ira Shokar and Prof. Peter V. Coveney}
 }
 ```
